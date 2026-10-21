@@ -4,7 +4,8 @@ Started by the notebook (§6 maps, §7 metrics4, §8 maxsens) as
     python scripts/nb01_worker.py RUN_DIR PHASE WORKER N_WORKERS
 with CUDA_VISIBLE_DEVICES set to the chosen GPU. Reads RUN_DIR/run_config.json (written by the notebook),
 handles images k with k % N_WORKERS == WORKER, one HM call per image (HM's own split_id/num_splits option)
-with seed = seed·10⁴ + k, and writes into RUN_DIR/workers/:
+with seed = seed·10⁴ + k. Pixel Flipping and Selectivity go through scripts/quantus_batched.py (quantus_chunk
+perturbation steps per forward pass); tf32 in run_config.json sets PyTorch's TF32 flags. Writes into RUN_DIR/workers/:
     progress_{PHASE}_w{WORKER}.json   progress, read by the notebook's bar
     timing_{PHASE}_w{WORKER}.json     seconds, images, peak GPU memory, whether anything new was computed
 Its stdout/stderr (HM's own prints) go to RUN_DIR/workers/{PHASE}_w{WORKER}.log.
@@ -49,9 +50,13 @@ def main():
     from xai.evaluation.dataset_utils import _load_dataset
     from xai.evaluation.unified_utils import _set_random_seeds
     from nb_progress import Progress
+    import quantus_batched
     for h in logging.getLogger().handlers:
         h.setLevel(logging.ERROR)
     log = logging.getLogger("hm_repro")
+    # on Ampere and newer, PyTorch runs float32 convolutions as TF32 unless told otherwise
+    torch.backends.cudnn.allow_tf32 = torch.backends.cuda.matmul.allow_tf32 = cfg.get("tf32", True)
+    quantus_batched.install(cfg.get("quantus_chunk", 1))
 
     n_images, main_dir = cfg["n_images"], Path(cfg["main_dir"])
     images = [k for k in range(n_images) if k % n_w == w]
@@ -88,6 +93,10 @@ def main():
             # hand over the model and the checked test list; each call below then handles image k only
             ev.model, ev.dataset, ev.stratified_indices, ev.num_images = model, dataset, test_idx, n_images
             methods = list(ev.methods_config) if phase == "maps" else [None]
+            # HM calls gc.collect() after every explanation (twice per Max Sens sample); freezing the
+            # long-lived objects (torch, model, dataset, ...) makes each call skip them: ~0.13 s -> ~0 s
+            gc.collect()
+            gc.freeze()
             for m in methods:
                 if m is not None:
                     ev.methods_config = [m]
@@ -106,6 +115,7 @@ def main():
                                "peak_gib": torch.cuda.max_memory_allocated() / 2**30, "fresh": after > before})
             ev.logger.removeHandler(ev.main_file_handler)
             ev.main_file_handler.close()
+            gc.unfreeze()
             del ev, model
             gc.collect()
             torch.cuda.empty_cache()
