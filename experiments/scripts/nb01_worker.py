@@ -14,6 +14,7 @@ import gc
 import json
 import logging
 import os
+import re
 import shutil
 import sys
 import time
@@ -34,6 +35,36 @@ def filled(base):
     # number of non-empty metric cells in the per-image results; a cached pass adds none
     import pandas as pd
     return sum(int(pd.read_csv(p).notna().sum().sum()) for p in Path(base).glob("image_*/results.csv"))
+
+
+class ExplainFailures(logging.Handler):
+    """Collects the methods whose explanation failed inside HM's Max Sens explain_func.
+
+    HM replaces a failed explanation (CUDA out of memory, ...) by an all-zero map and Quantus then scores it
+    as a finite Max Sens (1.0 for that sample), so the failure would be cached as a wrong number.
+    """
+
+    def __init__(self):
+        super().__init__(logging.WARNING)
+        self.methods = set()
+
+    def emit(self, record):
+        msg = record.getMessage()
+        m = re.search(r"explain_func (?:failed )?for (\S+?):", msg)
+        if m and ("failed for" in msg or "returned None" in msg):
+            self.methods.add(m.group(1))
+
+
+def blank_max_sens(group_dir, k, methods):
+    # NaN makes §9 of the notebook report the cells and a rerun recompute exactly these
+    import pandas as pd
+    for csv in Path(group_dir).glob(f"image_{k:04d}_*/results.csv"):
+        df = pd.read_csv(csv)
+        df.loc[df["method"].isin(methods), "max_sensitivity"] = float("nan")
+        df.to_csv(csv, index=False)
+    print(f"image {k}: Max Sens failed for {sorted(methods)}, set to NaN; rerun (with fewer workers) to recompute",
+          flush=True)
+    methods.clear()
 
 
 def main():
@@ -93,6 +124,9 @@ def main():
             # hand over the model and the checked test list; each call below then handles image k only
             ev.model, ev.dataset, ev.stratified_indices, ev.num_images = model, dataset, test_idx, n_images
             methods = list(ev.methods_config) if phase == "maps" else [None]
+            failures = ExplainFailures()
+            if phase == "maxsens":
+                ev.logger.addHandler(failures)
             # HM calls gc.collect() after every explanation (twice per Max Sens sample); freezing the
             # long-lived objects (torch, model, dataset, ...) makes each call skip them: ~0.13 s -> ~0 s
             gc.collect()
@@ -107,12 +141,15 @@ def main():
                     ev.split_id, ev.num_splits = k, n_images
                     _set_random_seeds(seed * 10_000 + k)
                     (ev.run_map_generation_phase if phase == "maps" else ev.run_evaluation_phase)()
+                    if failures.methods:
+                        blank_max_sens(base / group, k, failures.methods)
                     bar.update()
                 after = len(list((base / group).glob("image_*/*.npz"))) if phase == "maps" else filled(base / group)
                 timing.append({"phase": phase if phase != "maxsens" else f"maxsens_seed{seed}",
                                "method": m["name"] if m is not None else group,
                                "seconds": time.perf_counter() - t0, "n_images": len(images),
                                "peak_gib": torch.cuda.max_memory_allocated() / 2**30, "fresh": after > before})
+            ev.logger.removeHandler(failures)
             ev.logger.removeHandler(ev.main_file_handler)
             ev.main_file_handler.close()
             gc.unfreeze()
