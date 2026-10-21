@@ -1,0 +1,44 @@
+[project]
+name = "gauge-centering-xai-experiments"
+version = "0.1.0"
+description = "Experiments for the gauge-centring XAI paper; first: reproducing Hidden Monotonicity Table 1"
+requires-python = ">=3.12,<3.13"
+# Versions follow DC-Decomposition-for-Explanability/requirements.txt (torch 2.5.1, numpy<2).
+# Only packages the HM evaluation code imports are listed; dev tools and wandb are left out.
+dependencies = [
+    "torch==2.5.1",
+    "torchvision==0.20.1",
+    "numpy<2",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "tqdm",
+    "pillow",
+    "scikit-image",
+    "quantus>=0.5.0",
+    "captum>=0.7.0",
+    "zennit>=0.5.0",
+    # imported by dc_decomposition (graph_analyser, tc_split) but missing from HM's requirements.txt
+    "torch-scatter==2.1.2+pt25cu124",
+    "torch-sparse==0.6.18+pt25cu124",
+    "ipykernel",
+    "nbconvert",
+    "nbformat",
+    "tabulate",
+    "ipywidgets>=8.1.9",
+]
+
+[tool.uv]
+package = false
+environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'", "sys_platform == 'linux' and platform_machine == 'x86_64'"]
+# PyG wheels built for torch 2.5.x + CUDA 12.4
+find-links = ["https://data.pyg.org/whl/torch-2.5.0+cu124.html"]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu124" }
+torchvision = { index = "pytorch-cu124" }

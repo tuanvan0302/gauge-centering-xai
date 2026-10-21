@@ -1,0 +1,27 @@
+{
+  "name": "hybrid_grad_shift_40_max_winnerTakesItAllMaxpool",
+  "type": "hybrid_gradient",
+  "description": "Hybrid grad with channel_shift - all spatial layers - batched evaluation - split_mode=half, monotone_maxpool",
+  "params": {
+    "grad_minimize_mode": "adaptive_shift_independent_40",
+    "minimize_mode": "channel_shift",
+    "minimize_scaling_factor": 0.0,
+    "minimize_threshold": 0.0,
+    "split_mode": "max",
+    "use_monotone_maxpool": false
+  },
+  "formulas": [
+    {
+      "name": "f12_grad_pp",
+      "op": "none",
+      "node": "features_12",
+      "grad_type": "grad_pp"
+    },
+    {
+      "name": "f14_grad_pp",
+      "op": "abs",
+      "node": "features_14",
+      "grad_type": "grad_pp"
+    }
+  ]
+}

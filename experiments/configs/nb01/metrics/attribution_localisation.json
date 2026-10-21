@@ -1,0 +1,10 @@
+{
+  "name": "attribution_localisation",
+  "metric_class": "attribution_localisation",
+  "enabled": true,
+  "use_softmax": false,
+  "params": {
+    "abs": false
+  },
+  "skip_methods": []
+}

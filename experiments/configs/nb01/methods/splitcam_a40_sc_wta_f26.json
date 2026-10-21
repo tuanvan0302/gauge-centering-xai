@@ -1,0 +1,21 @@
+{
+  "name": "hybrid_cam_shift_40_scale_max_winnerTakesItAllMaxpool_f26",
+  "type": "hybrid_cam",
+  "description": "ADDED for Table 1 row \"SplitCAM (sc, alpha=0.4, wta) (26,+,g) abs=y\": params copied from hybridMethods_winnerTakesItAllMaxpool/SplitCAM/hybrid_cam_shift_40_scale_max.json, formula f26_cam_pp/abs added (not in HM repo)",
+  "params": {
+    "grad_minimize_mode": "adaptive_shift_independent_40",
+    "minimize_mode": "threshold_scale_both_simultaneously",
+    "minimize_scaling_factor": 0.1,
+    "minimize_threshold": 10.0,
+    "split_mode": "max",
+    "use_monotone_maxpool": false
+  },
+  "formulas": [
+    {
+      "name": "f26_cam_pp",
+      "op": "abs",
+      "node": "features_26",
+      "cam_type": "cam_pp"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "hybrid_lrp_scaling_max_winnerTakesItAllMaxpool",
+  "type": "hybrid_lrp",
+  "description": "Comprehensive Hybrid LRP across all spatial layers - batched evaluation - split_mode=half, monotone_maxpool",
+  "params": {
+    "minimize_mode": "threshold_scale_both_simultaneously",
+    "minimize_scaling_factor": 0.1,
+    "minimize_threshold": 10,
+    "upsample_mode": "nearest",
+    "split_mode": "max",
+    "use_monotone_maxpool": false
+  },
+  "formulas": [
+    {
+      "name": "f26_cam_pp",
+      "op": "abs",
+      "node": "features_26",
+      "cam_type": "cam_pp"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "random_baseline",
+  "type": "random",
+  "description": "Random attribution baseline (copied from res_full_eval/random_baseline.json, model set to vgg16)",
+  "model": "vgg16"
+}

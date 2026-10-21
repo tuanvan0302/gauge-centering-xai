@@ -1,0 +1,12 @@
+{
+  "name": "max_sensitivity",
+  "metric_class": "max_sensitivity",
+  "enabled": true,
+  "use_softmax": false,
+  "params": {
+    "nr_samples": 25,
+    "abs": false,
+    "normalise": true
+  },
+  "skip_methods": []
+}

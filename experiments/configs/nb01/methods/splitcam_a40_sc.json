@@ -1,0 +1,27 @@
+{
+  "name": "hybrid_cam_shift_40_scale_max",
+  "type": "hybrid_cam",
+  "description": "Hybrid CAM with threshold_scale_both_simultaneously - all spatial layers - batched evaluation - split_mode=half, monotone_maxpool",
+  "params": {
+    "grad_minimize_mode": "adaptive_shift_independent_40",
+    "minimize_mode": "threshold_scale_both_simultaneously",
+    "minimize_scaling_factor": 0.1,
+    "minimize_threshold": 10.0,
+    "split_mode": "max",
+    "use_monotone_maxpool": true
+  },
+  "formulas": [
+    {
+      "name": "f12_cam_g",
+      "op": "none",
+      "node": "features_12",
+      "cam_type": "cam_g"
+    },
+    {
+      "name": "f14_cam_g",
+      "op": "none",
+      "node": "features_14",
+      "cam_type": "cam_g"
+    }
+  ]
+}

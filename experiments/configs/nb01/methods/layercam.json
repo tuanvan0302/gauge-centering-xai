@@ -1,0 +1,10 @@
+{
+  "name": "layer_cam",
+  "type": "layer_cam",
+  "model": "vgg16",
+  "description": "LayerCAM - selected VGG16 convolutional layers",
+  "formulas": [
+    {"name": "features_14", "op": "relu", "layer": "features.14"},
+    {"name": "features_2", "op": "relu", "layer": "features.2"}
+  ]
+}

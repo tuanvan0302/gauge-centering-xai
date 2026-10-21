@@ -1,0 +1,10 @@
+{
+  "name": "pointing_game",
+  "metric_class": "pointing_game",
+  "enabled": true,
+  "use_softmax": false,
+  "params": {
+    "abs": false
+  },
+  "skip_methods": []
+}

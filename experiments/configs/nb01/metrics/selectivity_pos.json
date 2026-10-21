@@ -1,0 +1,13 @@
+{
+  "name": "selectivity_pos",
+  "metric_class": "selectivity",
+  "enabled": true,
+  "use_softmax": false,
+  "params": {
+    "patch_size": 8,
+    "abs": false,
+    "normalise": true,
+    "perturb_baseline": "mean"
+  },
+  "skip_methods": []
+}

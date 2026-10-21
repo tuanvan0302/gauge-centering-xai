@@ -1,0 +1,12 @@
+{
+  "name": "pixel_flipping_pos",
+  "metric_class": "pixel_flipping",
+  "enabled": true,
+  "use_softmax": false,
+  "params": {
+    "features_in_step": 112,
+    "abs": false,
+    "normalise": true,
+    "perturb_baseline": "mean"
+  }
+}
