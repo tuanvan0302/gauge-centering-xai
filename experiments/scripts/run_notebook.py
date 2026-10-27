@@ -6,9 +6,14 @@ no N_IMAGES), reads configs/nbNN/ and reference/nbNN/, and prefixes its figures 
 Usage, from gauge-centering-xai/experiments:
     uv run python scripts/run_notebook.py nb01                                     # settings as in the notebook
     uv run python scripts/run_notebook.py nb01 --n-images 566 --gpu 1 --workers 3  # override for this run only
+    uv run python scripts/run_notebook.py nb02 --n-images 5                        # nb02 full run (1 = smoke test)
+    uv run python scripts/run_notebook.py nb03                                     # nb03 smoke test: 1 image, CPU
+    uv run python scripts/run_notebook.py nb03 --n-images 566 --gpus all --workers-per-gpu 3   # nb03 full run
 
 --n-images rewrites the notebook's "N_IMAGES = ..." line in memory; --gpu and --workers are passed to the kernel
-as NB_GPU and NB_WORKERS (nb01 starts that many worker processes on that GPU for its heavy phases).
+as NB_GPU and NB_WORKERS (nb01 starts that many worker processes on that GPU for its heavy phases); --gpus ('all',
+'cpu' or a list such as 0,1,2,3) and --workers-per-gpu as NB_GPUS and NB_WORKERS_PER_GPU (nb03 starts that many
+workers on every listed GPU).
 The outer bar counts code cells and names the current section; the inner bar follows the long phases through
 RUN_DIR/progress.json, written by the notebook (scripts/nb_progress.py). Each cell's printed lines are echoed.
 The notebook file itself is not changed; the executed copy with all outputs is saved as
@@ -68,6 +73,8 @@ def main():
     ap.add_argument("--n-images", type=int, default=None, help="override N_IMAGES (nb01: 1 = smoke test, 566 = full run)")
     ap.add_argument("--gpu", type=int, default=None, help="GPU index for the kernel and its workers (NB_GPU)")
     ap.add_argument("--workers", type=int, default=None, help="number of worker processes (NB_WORKERS)")
+    ap.add_argument("--gpus", default=None, help="nb03: GPUs for the workers: 'all', 'cpu' or e.g. 0,1,2,3 (NB_GPUS)")
+    ap.add_argument("--workers-per-gpu", type=int, default=None, help="nb03: workers on every GPU (NB_WORKERS_PER_GPU)")
     args = ap.parse_args()
     for stream in (sys.stdout, sys.stderr):   # Vietnamese text also when the output is piped to a log file
         stream.reconfigure(encoding="utf-8")
@@ -77,6 +84,10 @@ def main():
         os.environ["NB_GPU"] = str(args.gpu)
     if args.workers is not None:
         os.environ["NB_WORKERS"] = str(args.workers)
+    if args.gpus is not None:
+        os.environ["NB_GPUS"] = args.gpus
+    if args.workers_per_gpu is not None:
+        os.environ["NB_WORKERS_PER_GPU"] = str(args.workers_per_gpu)
 
     found = sorted(EXP.glob(f"{args.nb_id}_*.ipynb"))
     if len(found) != 1:
@@ -104,8 +115,11 @@ def main():
         titles[i] = title
     n_code = sum(c.cell_type == "code" for c in nb.cells)
 
-    print(f"notebook : {notebook.name}\nN_IMAGES : {n_images}\nGPU      : {os.environ.get('NB_GPU', 'như notebook')}"
-          f"\nworker   : {os.environ.get('NB_WORKERS', 'như notebook')}\nkết quả  : {run_dir}\n")
+    gpu = os.environ.get("NB_GPUS", os.environ.get("NB_GPU", "như notebook"))
+    workers = (f"{os.environ['NB_WORKERS_PER_GPU']} mỗi GPU" if "NB_WORKERS_PER_GPU" in os.environ
+               else os.environ.get("NB_WORKERS", "như notebook"))
+    print(f"notebook : {notebook.name}\nN_IMAGES : {n_images}\nGPU      : {gpu}\nworker   : {workers}\n"
+          f"kết quả  : {run_dir}\n")
     cells_bar = tqdm(total=n_code, desc="cell", unit="cell", position=0, dynamic_ncols=True)
     phase_bar = PhaseBar(progress_file)
     phase_bar.start()
